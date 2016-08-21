@@ -1,0 +1,61 @@
+{
+	"ImportPath": "github.com/giovanni-liboni/news-to-json",
+	"GoVersion": "go1.7",
+	"GodepVersion": "v74",
+	"Deps": [
+		{
+			"ImportPath": "github.com/PuerkitoBio/goquery",
+			"Comment": "v1.0.0",
+			"Rev": "7f4291566cf7cac3be222a933e01a2bed97532b1"
+		},
+		{
+			"ImportPath": "github.com/andybalholm/cascadia",
+			"Rev": "3ad29d1ad1c4f2023e355603324348cf1f4b2d48"
+		},
+		{
+			"ImportPath": "github.com/jteeuwen/go-pkg-rss",
+			"Rev": "72391e6fd7384785fa3c46a405214a616d6c4a1d"
+		},
+		{
+			"ImportPath": "github.com/jteeuwen/go-pkg-xmlx",
+			"Rev": "76f54ee73233b171ca9ee82ef837a1fc4d3809c0"
+		},
+		{
+			"ImportPath": "github.com/tdewolff/buffer",
+			"Comment": "v1.0.0-6-g0edfcb7",
+			"Rev": "0edfcb7b750146ff879e95831de2ef53605a5cb5"
+		},
+		{
+			"ImportPath": "github.com/tdewolff/minify",
+			"Comment": "v2.0.0-96-ga058e08",
+			"Rev": "a058e08dfe0bf74cc433e4e3ce56de4fbea31d85"
+		},
+		{
+			"ImportPath": "github.com/tdewolff/minify/html",
+			"Comment": "v2.0.0-96-ga058e08",
+			"Rev": "a058e08dfe0bf74cc433e4e3ce56de4fbea31d85"
+		},
+		{
+			"ImportPath": "github.com/tdewolff/parse",
+			"Comment": "v2.0.0-2-g34d5c11",
+			"Rev": "34d5c1160d4503da4b456e5094609f2331d6dde3"
+		},
+		{
+			"ImportPath": "github.com/tdewolff/parse/html",
+			"Comment": "v2.0.0-2-g34d5c11",
+			"Rev": "34d5c1160d4503da4b456e5094609f2331d6dde3"
+		},
+		{
+			"ImportPath": "github.com/tdewolff/strconv",
+			"Rev": "3e8091f4417ebaaa3910da63a45ea394ebbfb0e3"
+		},
+		{
+			"ImportPath": "golang.org/x/net/html",
+			"Rev": "7394c112eae4dba7e96bfcfe738e6373d61772b4"
+		},
+		{
+			"ImportPath": "golang.org/x/net/html/atom",
+			"Rev": "7394c112eae4dba7e96bfcfe738e6373d61772b4"
+		}
+	]
+}
