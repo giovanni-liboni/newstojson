@@ -1,13 +1,26 @@
 package newstojson
 
 import (
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
+	"net/url"
 	"reflect"
 	"testing"
+	"time"
 
 	rss "github.com/jteeuwen/go-pkg-rss"
 )
+
+// News container
+type NewsCustom struct {
+	Title       string
+	Description string
+	Content     string
+	Link        *url.URL
+	PubTime     time.Time // Pubblication time
+}
 
 func TestParse(t *testing.T) {
 
@@ -16,6 +29,7 @@ func TestParse(t *testing.T) {
 		log.Println("Parsing all items...")
 		for _, item := range newitems {
 			newitem, err := Parse(item)
+			newitem.CompleteParse()
 			if err != nil {
 				t.Error(err)
 			}
@@ -32,9 +46,16 @@ func TestParse(t *testing.T) {
 			log.Println("#Attachments :", len(newitem.Attachments))
 			PrintAttachments(newitem.Attachments)
 
-			// log.Println("Printing JSON...")
-			// res1B, _ := json.Marshal(newitem)
-			// fmt.Println(string(res1B))
+			n := NewsCustom{
+				Title:       newitem.Title,
+				Description: newitem.Description,
+				Content:     newitem.Content,
+				Link:        newitem.Link,
+				PubTime:     newitem.PubTime,
+			}
+			log.Println("Printing JSON...")
+			res1B, _ := json.Marshal(n)
+			fmt.Println(string(res1B))
 
 		}
 		log.Println("==================================================================================================")
