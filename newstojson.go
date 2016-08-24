@@ -71,14 +71,37 @@ func Parse(rssitem *rss.Item) (*News, error) {
 		return nil, err
 	}
 
-	// Get all IDs courses
-	news.SetIDsCourses()
+	// Return the new obj
+	return news, nil
+}
+
+func ParseFromLink(link *url.URL, pubDate time.Time, description string, title string) (*News, error) {
+	news := new(News)
+	news.PubTime = pubDate
+	news.Title = title
+	news.Description = description
+	news.Link = link
+
+	// Retrive news ID
+	m, _ := url.ParseQuery(news.Link.RawQuery)
+	news.ID, _ = strconv.Atoi(m["id"][0])
+
+	// Retrive other infos
+	err := news.GetContentFromURL()
 	if err != nil {
 		return nil, err
 	}
 
-	// Return the new obj
 	return news, nil
+}
+
+func (item *News) CompleteParse() error {
+	// Get all IDs courses
+	err := item.SetIDsCourses()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func SpaceMap(str string) string {
