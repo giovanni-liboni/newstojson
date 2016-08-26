@@ -42,7 +42,7 @@
 				<guid>http://www.di.univr.it/?ent=avviso&amp;dest=165&amp;rss=0&amp;id=116851</guid>
 			</item>
 
-			<!-- <item>
+			 <item>
 				<title>Sospensione ricevimento fino al 25 agosto</title>
 				<link>http://www.di.univr.it/?ent=avviso&amp;dest=165&amp;rss=0&amp;id=117300</link>
 				<description>Pubblicato da: Graziano Pravadelli</description>
@@ -50,7 +50,7 @@
 				<pubDate>Wed, 27 Jul 2016 12:13:34 +0200</pubDate>
 				<guid>http://www.di.univr.it/?ent=avviso&amp;dest=165&amp;rss=0&amp;id=117300</guid>
 			</item>
-
+<!--
 			<item>
 				<title>Calendario disponibilit&#224; servizio di prestito</title>
 				<link>http://www.di.univr.it/?ent=avviso&amp;dest=165&amp;rss=0&amp;id=48457</link>
