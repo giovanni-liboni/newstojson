@@ -23,6 +23,7 @@ type NewsCustom struct {
 }
 
 func TestParse(t *testing.T) {
+	activationTime := time.Now()
 
 	content, _ := ioutil.ReadFile("testdata/data.rss")
 	feed := rss.New(1, true, chanTestHandler, func(feed *rss.Feed, ch *rss.Channel, newitems []*rss.Item) {
@@ -44,6 +45,7 @@ func TestParse(t *testing.T) {
 			log.Println("Courses      :", newitem.Courses)
 			log.Println("Degrees      :", newitem.DegreeIds)
 			log.Println("#Attachments :", len(newitem.Attachments))
+			log.Println("IsNew        :", newitem.IsNew(activationTime))
 			PrintAttachments(newitem.Attachments)
 
 			n := NewsCustom{
