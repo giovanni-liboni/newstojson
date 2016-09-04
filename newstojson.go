@@ -49,6 +49,7 @@ func Parse(rssitem *rss.Item) (*News, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	// Title
 	news.Title = rssitem.Title
 
@@ -93,6 +94,11 @@ func ParseFromLink(link *url.URL, pubDate time.Time, description string, title s
 	}
 
 	return news, nil
+}
+
+// Return true if the news was sent BEFORE activation date
+func (item *News) IsNew(activationTime time.Time) bool {
+	return activationTime.UTC().Before(item.PubTime.UTC()) || activationTime.UTC().Equal(item.PubTime.UTC()) || activationTime.UTC().Before(item.ModTime.UTC()) || activationTime.UTC().Equal(item.ModTime.UTC())
 }
 
 func (item *News) CompleteParse() error {
@@ -143,12 +149,14 @@ func (item *News) GetContentFromURL() error {
 		if action == "pubDate" && s.Is("dd") {
 			value := SpaceMap(strings.TrimSpace(s.Text()))
 			layout := "Monday,January2,2006-15:4:5PM"
-			item.PubTime, _ = time.Parse(layout, value)
+			loc, _ := time.LoadLocation("Europe/Rome")
+			item.PubTime, _ = time.ParseInLocation(layout, value, loc)
 			action = ""
 		} else if action == "modDate" && s.Is("dd") {
 			value := SpaceMap(strings.TrimSpace(s.Text()))
 			layout := "Monday,January2,2006-15:4:5PM"
-			item.ModTime, _ = time.Parse(layout, value)
+			loc, _ := time.LoadLocation("Europe/Rome")
+			item.ModTime, _ = time.ParseInLocation(layout, value, loc)
 			action = ""
 		} else if action == "author" && s.Is("dd") {
 			item.Author = strings.TrimSpace(s.Text())

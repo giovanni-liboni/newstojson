@@ -101,6 +101,52 @@ func TestGetNewsPagesFromHost(t *testing.T) {
 	}
 }
 
+func TestIsNew(t *testing.T) {
+	content, _ := ioutil.ReadFile("testdata/data.rss")
+	feed := rss.New(1, true, chanTestHandler, func(feed *rss.Feed, ch *rss.Channel, newitems []*rss.Item) {
+		log.Println("Parsing all items...")
+		for _, item := range newitems {
+			newitem, err := Parse(item)
+			if err != nil {
+				t.Error(err)
+			}
+			tm := time.Now()
+
+			// Pubblicato nel passato
+			if newitem.IsNew(tm) {
+				t.Error("This news is not new")
+			}
+
+			// Pubblicato esattamente all'attivazione
+			newitem.PubTime = tm
+			if !newitem.IsNew(tm) {
+				t.Error("New news but got old")
+			}
+
+			// Pubblicato nel futuro
+			newitem.PubTime = tm.Add(time.Hour * 2)
+			if !newitem.IsNew(tm) {
+				t.Error("New news but got old")
+			}
+
+			// Pubblicato nel passato e modificato nel passato
+			newitem.ModTime = tm.Add(time.Hour * 1)
+			newitem.PubTime = tm
+			if newitem.IsNew(tm.Add(time.Hour * 2)) {
+				t.Error("This news is not new")
+			}
+
+			// Pubblicato nel passato e modificato nel futuro
+			newitem.ModTime = tm.Add(time.Hour * 2)
+			newitem.PubTime = tm
+			if !newitem.IsNew(tm.Add(time.Hour * 1)) {
+				t.Error("This news is not new")
+			}
+		}
+	})
+	feed.FetchBytes("http://example.com", content, nil)
+}
+
 func PrintAttachments(attachs []Attachment) {
 	for _, item := range attachs {
 		log.Println("-----------------------------------------")
