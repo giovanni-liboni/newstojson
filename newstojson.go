@@ -241,19 +241,24 @@ func (item *News) SetIDsCourses() error {
 func getNewsPagesFromHost(host string) ([]string, error) {
 	var res []string
 
-	// Triennali
-	tmpRes, err := NewsPageLinksFromURLCorso(host + "/?ent=cs&tcs=N")
-	if err != nil {
-		return nil, err
+	coursesType := []string{
+		"N",
+		"MA",
+		"mu",
+		"SP",
+		"R",
+		"F",
+		"T",
 	}
 
-	res = append(res, tmpRes...)
-	// Magistrali
-	tmpRes, err = NewsPageLinksFromURLCorso(host + "/?ent=cs&tcs=MA")
-	if err != nil {
-		return nil, err
+	for _, courseType := range coursesType {
+		tmpRes, err := NewsPageLinksFromURLCorso(host + "/?ent=cs&tcs=" + courseType)
+		if err != nil {
+			return nil, err
+		}
+
+		res = append(res, tmpRes...)
 	}
-	res = append(res, tmpRes...)
 
 	return res, nil
 }

@@ -101,6 +101,15 @@ func TestGetNewsPagesFromHost(t *testing.T) {
 	if len(res) != 7 {
 		t.Error("Expected 7 elements, got", len(res))
 	}
+	res, err = getNewsPagesFromHost("www.medicina.univr.it")
+	if err != nil {
+		t.Error(err)
+	}
+	log.Println(res)
+	if len(res) != 22 {
+		t.Error("Expected 22 elements, got", len(res))
+	}
+
 }
 
 func TestIsNew(t *testing.T) {
