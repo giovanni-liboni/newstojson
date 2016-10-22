@@ -240,7 +240,6 @@ func (item *News) SetIDsCourses() error {
 
 func getNewsPagesFromHost(host string) ([]string, error) {
 	var res []string
-
 	coursesType := []string{
 		"N",
 		"MA",
@@ -250,16 +249,35 @@ func getNewsPagesFromHost(host string) ([]string, error) {
 		"F",
 		"T",
 	}
-
 	for _, courseType := range coursesType {
 		tmpRes, err := NewsPageLinksFromURLCorso(host + "/?ent=cs&tcs=" + courseType)
 		if err != nil {
 			return nil, err
 		}
-
 		res = append(res, tmpRes...)
 	}
+	return res, nil
+}
 
+// getNewsPagesFromHostMedicina recupera i link delle pagine
+func getNewsPagesFromHostMedicina(host string) ([]string, error) {
+	var res []string
+	coursesType := []string{
+		"N",
+		"MA",
+		"mu",
+		"SP",
+		"R",
+		"F",
+		"T",
+	}
+	for _, courseType := range coursesType {
+		tmpRes, err := NewsPageLinksFromURLCorsoMedicina(host + "/?ent=cs&tcs=" + courseType)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, tmpRes...)
+	}
 	return res, nil
 }
 
@@ -281,8 +299,39 @@ func NewsPageLinksFromURLCorso(urlString string) ([]string, error) {
 		log.Println(err)
 		return nil, err
 	} else {
-		doc.Find("#centroservizi").Find("dl").Find("dt").Find("a").Each(func(i int, s *goquery.Selection) {
+		doc.Find("#contenutoPagina").Find("dl").Find("dt").Find("a").Each(func(i int, s *goquery.Selection) {
 
+			// Costrisco l'intero url
+			idString, idBool := s.Attr("href")
+			if idBool {
+				id := GetIDFromString(idString)
+				// log.Println(rootURL.Host + "/?ent=avvisoin&cs=" + strconv.Itoa(id))
+				res = append(res, rootURL.Host+"/?ent=avvisoin&cs="+strconv.Itoa(id))
+			}
+		})
+	}
+	return res, nil
+}
+
+func NewsPageLinksFromURLCorsoMedicina(urlString string) ([]string, error) {
+	var res []string
+
+	urlString = "http://" + urlString
+
+	rootURL, err := url.Parse(urlString)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	doc, err := goquery.NewDocument(urlString)
+
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	} else {
+		doc.Find("#centroservizi").Find("dl").Find("dt").Find("a").Each(func(i int, s *goquery.Selection) {
+			// Start OLD SITE
 			tokens := strings.Split(s.Text(), "(")
 			var stringToTest string
 
@@ -302,10 +351,12 @@ func NewsPageLinksFromURLCorso(urlString string) ([]string, error) {
 					res = append(res, rootURL.Host+"/?ent=avvisoin&cs="+strconv.Itoa(id))
 				}
 			}
+			// END OLD SITE
 		})
 	}
 	return res, nil
 }
+
 func RetriveLast5NewsIDsFromNewsPage(newsPageURL string) ([]int, error) {
 	var res []int
 

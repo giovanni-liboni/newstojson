@@ -69,9 +69,8 @@ func TestNewsPageLinksFromURLCorso(t *testing.T) {
 	url := "www.dbt.univr.it/?ent=cs&tcs=N"
 
 	correctUrls := []string{
-		"www.dbt.univr.it/?ent=avvisoin&cs=386",
 		"www.dbt.univr.it/?ent=avvisoin&cs=385",
-		"www.dbt.univr.it/?ent=avvisoin&cs=419",
+		"www.dbt.univr.it/?ent=avvisoin&cs=386",
 	}
 
 	res, _ := NewsPageLinksFromURLCorso(url)
@@ -83,33 +82,33 @@ func TestNewsPageLinksFromURLCorso(t *testing.T) {
 		t.Error("Expected", correctUrls, "got ", res)
 	}
 }
+
 func TestRetriveLast5NewsIDsFromNewsPage(t *testing.T) {
-	res, err := RetriveLast5NewsIDsFromNewsPage("www.dbt.univr.it/?ent=avvisoin&cs=385")
+	res, err := RetriveLast5NewsIDsFromNewsPage("www.di.univr.it/?ent=avvisoin&cs=417")
 	if err != nil {
 		t.Error(err)
 	}
 	if len(res) != 5 {
 		t.Error("Expected 5 elements, got", len(res))
 	}
-
 }
+
 func TestGetNewsPagesFromHost(t *testing.T) {
 	res, err := getNewsPagesFromHost("www.di.univr.it")
 	if err != nil {
 		t.Error(err)
 	}
-	if len(res) != 7 {
-		t.Error("Expected 7 elements, got", len(res))
+	if len(res) != 6 {
+		t.Error("Expected 6 elements, got", len(res))
 	}
-	res, err = getNewsPagesFromHost("www.medicina.univr.it")
+
+	res, err = getNewsPagesFromHostMedicina("www.medicina.univr.it")
 	if err != nil {
 		t.Error(err)
 	}
-	log.Println(res)
 	if len(res) != 22 {
 		t.Error("Expected 22 elements, got", len(res))
 	}
-
 }
 
 func TestIsNew(t *testing.T) {
@@ -168,7 +167,6 @@ func PrintAttachments(attachs []Attachment) {
 	if len(attachs) > 0 {
 		log.Println("-----------------------------------------")
 	}
-
 }
 
 func chanTestHandler(feed *rss.Feed, newchannels []*rss.Channel) {
