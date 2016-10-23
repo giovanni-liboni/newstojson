@@ -220,3 +220,16 @@ func TestParseFromLink(t *testing.T) {
 
 	}
 }
+
+func TestSetIDFromURL(t *testing.T) {
+	var item News
+	item.SetIDFromURL("www.univr.it/?enc=avviso&id=100")
+	if item.ID != 100 {
+		t.Error("Expected 100 but got", item.ID)
+	}
+
+	item.SetIDFromURL("/?enc=avviso&id=101")
+	if item.ID != 101 {
+		t.Error("Expected 101 but got", item.ID)
+	}
+}

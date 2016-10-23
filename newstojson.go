@@ -1,6 +1,7 @@
 package newstojson
 
 import (
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -243,6 +244,20 @@ func (item *News) SetIDsCourses() error {
 		}
 	}
 
+	return nil
+}
+
+func (item *News) SetIDFromURL(url string) error {
+	if strings.Contains(url, "avviso") {
+		if strings.Contains(url, "univr.it") {
+			// host gia' presente
+			item.ID = getIDFromCompleteURL(url)
+		} else {
+			item.ID = getIDFromCompleteURL("wwww.example.com" + url)
+		}
+	} else {
+		return errors.New("No valid url")
+	}
 	return nil
 }
 
