@@ -2,15 +2,16 @@ package newstojson
 
 import (
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 	"unicode"
 
 	"github.com/PuerkitoBio/goquery"
+	log "github.com/Sirupsen/logrus"
 	rss "github.com/jteeuwen/go-pkg-rss"
 	"github.com/tdewolff/minify"
 	mhtml "github.com/tdewolff/minify/html"
@@ -39,7 +40,11 @@ type News struct {
 	DegreeIds   []int // Lauree a cui e' rivolto l'avviso
 }
 
-// Parse funtion to parse rss item passes as argument
+// =============================================================================
+// Parse functions
+// =============================================================================
+
+// Parse function to parse rss item passes as argument
 func Parse(rssitem *rss.Item) (*News, error) {
 	var err error
 	news := new(News)
@@ -76,11 +81,8 @@ func Parse(rssitem *rss.Item) (*News, error) {
 	return news, nil
 }
 
-func ParseFromLink(link *url.URL, pubDate time.Time, description string, title string) (*News, error) {
+func ParseFromLink(link *url.URL) (*News, error) {
 	news := new(News)
-	news.PubTime = pubDate
-	news.Title = title
-	news.Description = description
 	news.Link = link
 
 	// Retrive news ID
@@ -96,11 +98,6 @@ func ParseFromLink(link *url.URL, pubDate time.Time, description string, title s
 	return news, nil
 }
 
-// Return true if the news was sent BEFORE activation date
-func (item *News) IsNew(activationTime time.Time) bool {
-	return activationTime.UTC().Before(item.PubTime.UTC()) || activationTime.UTC().Equal(item.PubTime.UTC()) || activationTime.UTC().Before(item.ModTime.UTC()) || activationTime.UTC().Equal(item.ModTime.UTC())
-}
-
 func (item *News) CompleteParse() error {
 	// Get all IDs courses
 	err := item.SetIDsCourses()
@@ -110,19 +107,13 @@ func (item *News) CompleteParse() error {
 	return nil
 }
 
-func SpaceMap(str string) string {
-	return strings.Map(func(r rune) rune {
-		if unicode.IsSpace(r) {
-			return -1
-		}
-		if unicode.IsSymbol(r) {
-			return -1
-		}
-		if strings.IndexRune(".!$", r) == 0 {
-			return -1
-		}
-		return r
-	}, str)
+// =============================================================================
+// Secondary functions (IsNew)
+// =============================================================================
+
+// Return true if the news was sent BEFORE activation date
+func (item *News) IsNew(activationTime time.Time) bool {
+	return activationTime.UTC().Before(item.PubTime.UTC()) || activationTime.UTC().Equal(item.PubTime.UTC()) || activationTime.UTC().Before(item.ModTime.UTC()) || activationTime.UTC().Equal(item.ModTime.UTC())
 }
 
 // GetContentFromURL builds content and files attached to the news
@@ -143,6 +134,7 @@ func (item *News) GetContentFromURL() error {
 	if err != nil {
 		return err
 	}
+	item.Title = doc.Find("h1").Text()
 
 	action := ""
 	doc.Find("#dettagliAvviso").Children().Each(func(i int, s *goquery.Selection) {
@@ -159,10 +151,20 @@ func (item *News) GetContentFromURL() error {
 			item.ModTime, _ = time.ParseInLocation(layout, value, loc)
 			action = ""
 		} else if action == "author" && s.Is("dd") {
-			item.Author = strings.TrimSpace(s.Text())
-			action = "courses"
-		} else if action == "courses" && s.Is("dd") {
-			item.Courses = append(item.Courses, strings.TrimSpace(s.Text()))
+			html, errIn := s.Html()
+			if err != nil {
+				log.Errorln(errIn)
+			}
+			res := HtmlBRDivisorTOArray(html)
+			item.Author = res[0]
+			item.Courses = res[1:]
+			for i, course := range item.Courses {
+				item.Courses[i], err = m.String("text/html", course)
+				if err != nil {
+					log.Errorln(err)
+				}
+			}
+
 		} else {
 			action = ""
 		}
@@ -182,8 +184,10 @@ func (item *News) GetContentFromURL() error {
 	doc.Find(".formati").Find("li").Each(func(i int, s *goquery.Selection) {
 		attach.Title, err = m.String("text/html", s.Text())
 		if err != nil {
-			log.Println("Error on title : " + err.Error())
+			log.Errorln(err)
 		}
+		attach.Title = removeExtraSpaces(attach.Title)
+
 		linkAllegato, isPresent := s.Find("a").Attr("href")
 
 		if isPresent {
@@ -193,18 +197,18 @@ func (item *News) GetContentFromURL() error {
 			if isPresent {
 				attach.Link, err = m.String("text/html", baseURL+strings.Split(onclickString, "'")[3])
 				if err != nil {
-					log.Println("Error : " + err.Error())
+					log.Errorln(err)
 				}
 
 				resp, err := http.Get(attach.Link)
 				if err != nil {
-					log.Println("Error on response : " + err.Error())
+					log.Errorln("Error on response : " + err.Error())
 				} else {
 					defer resp.Body.Close()
 					body, err := ioutil.ReadAll(resp.Body)
 					attach.Preview, err = m.String("text/html", string(body))
 					if err != nil {
-						log.Println("Error on retrived : " + err.Error())
+						log.Errorln(err)
 					}
 				}
 			}
@@ -217,9 +221,14 @@ func (item *News) GetContentFromURL() error {
 }
 
 func (item *News) SetIDsCourses() error {
-
+	var newsPageList []string
+	var err error
 	// Get all news pages
-	newsPageList, err := getNewsPagesFromHost(item.Link.Host)
+	if strings.Contains(item.Link.Host, "medicina") {
+		newsPageList, err = getNewsPagesFromHostMedicina(item.Link.Host)
+	} else {
+		newsPageList, err = getNewsPagesFromHost(item.Link.Host)
+	}
 	if err != nil {
 		return err
 	}
@@ -227,16 +236,19 @@ func (item *News) SetIDsCourses() error {
 		//Recupero gli ultimi 5 avvisi da ogni corso e vedo dove e' presente
 		ids, err := RetriveLast5NewsIDsFromNewsPage(val)
 		if err != nil {
-			log.Println(err)
 			return err
 		}
 		if contains(ids, item.ID) {
-			item.DegreeIds = append(item.DegreeIds, GetIDFromCompleteURL(val))
+			item.DegreeIds = append(item.DegreeIds, getIDFromCompleteURL(val))
 		}
 	}
 
 	return nil
 }
+
+// =============================================================================
+// HTML utils functions
+// =============================================================================
 
 func getNewsPagesFromHost(host string) ([]string, error) {
 	var res []string
@@ -281,7 +293,9 @@ func getNewsPagesFromHostMedicina(host string) ([]string, error) {
 	return res, nil
 }
 
-// Ritorna la lista dei link alle pagine che contengono gli avvisi del dipartimento passato come parametro a partire dall'url che contiene tutte le laure del corso
+// Ritorna la lista dei link alle pagine che contengono gli avvisi del
+// dipartimento passato come parametro a partire dall'url che contiene
+// tutte le laure del corso
 func NewsPageLinksFromURLCorso(urlString string) ([]string, error) {
 	var res []string
 
@@ -289,14 +303,12 @@ func NewsPageLinksFromURLCorso(urlString string) ([]string, error) {
 
 	rootURL, err := url.Parse(urlString)
 	if err != nil {
-		log.Println(err)
 		return nil, err
 	}
 
 	doc, err := goquery.NewDocument(urlString)
 
 	if err != nil {
-		log.Println(err)
 		return nil, err
 	} else {
 		doc.Find("#contenutoPagina").Find("dl").Find("dt").Find("a").Each(func(i int, s *goquery.Selection) {
@@ -304,7 +316,7 @@ func NewsPageLinksFromURLCorso(urlString string) ([]string, error) {
 			// Costrisco l'intero url
 			idString, idBool := s.Attr("href")
 			if idBool {
-				id := GetIDFromString(idString)
+				id := getIDFromString(idString)
 				// log.Println(rootURL.Host + "/?ent=avvisoin&cs=" + strconv.Itoa(id))
 				res = append(res, rootURL.Host+"/?ent=avvisoin&cs="+strconv.Itoa(id))
 			}
@@ -320,14 +332,12 @@ func NewsPageLinksFromURLCorsoMedicina(urlString string) ([]string, error) {
 
 	rootURL, err := url.Parse(urlString)
 	if err != nil {
-		log.Println(err)
 		return nil, err
 	}
 
 	doc, err := goquery.NewDocument(urlString)
 
 	if err != nil {
-		log.Println(err)
 		return nil, err
 	} else {
 		doc.Find("#centroservizi").Find("dl").Find("dt").Find("a").Each(func(i int, s *goquery.Selection) {
@@ -345,7 +355,7 @@ func NewsPageLinksFromURLCorsoMedicina(urlString string) ([]string, error) {
 				// Recupero l'ID
 				idString, idBool := s.Attr("href")
 				if idBool {
-					id := GetIDFromString(idString)
+					id := getIDFromString(idString)
 
 					//log.Println(rootURL.Host + "/?ent=avvisoin&cs=" + strconv.Itoa(id))
 					res = append(res, rootURL.Host+"/?ent=avvisoin&cs="+strconv.Itoa(id))
@@ -370,7 +380,7 @@ func RetriveLast5NewsIDsFromNewsPage(newsPageURL string) ([]int, error) {
 			doc.Find("table").Find("tbody").Find("tr").Find("a").Slice(0, 5).Each(func(i int, s *goquery.Selection) {
 				idString, idBool := s.Attr("href")
 				if idBool {
-					id := GetIDFromString(idString)
+					id := getIDFromString(idString)
 					// log.Println(rootURL.Host + "/?ent=avvisoin&cs=" + strconv.Itoa(id))
 					res = append(res, id)
 				}
@@ -379,7 +389,7 @@ func RetriveLast5NewsIDsFromNewsPage(newsPageURL string) ([]int, error) {
 			doc.Find("table").Find("tbody").Find("tr").Find("a").Each(func(i int, s *goquery.Selection) {
 				idString, idBool := s.Attr("href")
 				if idBool {
-					id := GetIDFromString(idString)
+					id := getIDFromString(idString)
 					// log.Println(rootURL.Host + "/?ent=avvisoin&cs=" + strconv.Itoa(id))
 					res = append(res, id)
 				}
@@ -391,7 +401,7 @@ func RetriveLast5NewsIDsFromNewsPage(newsPageURL string) ([]int, error) {
 }
 
 // GetIDFromString retrive int ID from a string like this /?ent=avvisoin&id=432
-func GetIDFromString(urlString string) int {
+func getIDFromString(urlString string) int {
 	var id int
 	// Costruisco l'url completo alla pagina
 	singleURL, _ := url.Parse("www.example.com" + urlString)
@@ -403,7 +413,7 @@ func GetIDFromString(urlString string) int {
 	} else if val, ok := m["cs"]; ok {
 		id, _ = strconv.Atoi(val[0])
 	} else {
-		log.Println(urlString)
+		log.Warnln(urlString)
 		id = 0
 	}
 
@@ -411,7 +421,7 @@ func GetIDFromString(urlString string) int {
 }
 
 // GetIDFromString retrive int ID from a string like this www.univr.it/?ent=avvisoin&id=432
-func GetIDFromCompleteURL(urlString string) int {
+func getIDFromCompleteURL(urlString string) int {
 	var id int
 	// Costruisco l'url completo alla pagina
 	singleURL, _ := url.Parse(urlString)
@@ -423,12 +433,16 @@ func GetIDFromCompleteURL(urlString string) int {
 	} else if val, ok := m["cs"]; ok {
 		id, _ = strconv.Atoi(val[0])
 	} else {
-		log.Println(urlString)
+		log.Warnln(urlString)
 		id = 0
 	}
 
 	return id
 }
+
+// =============================================================================
+// Utils functions
+// =============================================================================
 
 func contains(s []int, e int) bool {
 	for _, a := range s {
@@ -437,4 +451,35 @@ func contains(s []int, e int) bool {
 		}
 	}
 	return false
+}
+
+func HtmlBRDivisorTOArray(html string) (res []string) {
+	res = strings.Split(html, "<br/>")
+	for i, tmp := range res {
+		res[i] = removeExtraSpaces(tmp)
+	}
+	return res
+}
+
+func removeExtraSpaces(s string) string {
+	re_leadclose_whtsp := regexp.MustCompile(`^[\s\p{Zs}]+|[\s\p{Zs}]+$`)
+	re_inside_whtsp := regexp.MustCompile(`[\s\p{Zs}]{2,}`)
+	final := re_leadclose_whtsp.ReplaceAllString(s, "")
+	final = re_inside_whtsp.ReplaceAllString(final, " ")
+	return final
+}
+
+func SpaceMap(str string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) {
+			return -1
+		}
+		if unicode.IsSymbol(r) {
+			return -1
+		}
+		if strings.IndexRune(".!$", r) == 0 {
+			return -1
+		}
+		return r
+	}, str)
 }
