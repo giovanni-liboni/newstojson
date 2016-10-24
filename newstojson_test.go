@@ -193,6 +193,7 @@ func TestParseFromLink(t *testing.T) {
 		"http://www.medicina.univr.it/fol/?ent=avviso&dest=25&id=119149",
 		"http://www.di.univr.it/?ent=avviso&dest=&id=118536",
 		"http://www.di.univr.it/?ent=avviso&id=119162",
+		"http://www.medicina.univr.it/fol/?ent=avviso&dest=25&id=119144",
 	}
 	for _, urlTmp := range urls {
 		tmp, _ := url.Parse(urlTmp)
