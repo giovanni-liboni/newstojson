@@ -47,6 +47,7 @@ func TestParse(t *testing.T) {
 			log.Println("#Attachments :", len(newitem.Attachments))
 			log.Println("IsNew        :", newitem.IsNew(activationTime))
 			PrintAttachments(newitem.Attachments)
+			log.Println("Content      : " + newitem.Content)
 
 			n := NewsCustom{
 				Title:       newitem.Title,
@@ -191,6 +192,7 @@ func TestParseFromLink(t *testing.T) {
 		"http://www.di.univr.it/?ent=avviso&dest=&id=118991",
 		"http://www.medicina.univr.it/fol/?ent=avviso&dest=25&id=119149",
 		"http://www.di.univr.it/?ent=avviso&dest=&id=118536",
+		"http://www.di.univr.it/?ent=avviso&id=119162",
 	}
 	for _, urlTmp := range urls {
 		tmp, _ := url.Parse(urlTmp)
@@ -205,17 +207,18 @@ func TestParseFromLink(t *testing.T) {
 
 		log.Println("==================================================================================================")
 		log.Println("ID           :", newitem.ID)
-		log.Println("Title        : " + newitem.Title)
-		log.Println("Author       : " + newitem.Author)
+		log.Println("Title        :", newitem.Title)
+		log.Println("Author       :", newitem.Author)
 		log.Println("Link         :", newitem.Link)
 		log.Println("Pub time     :", newitem.PubTime)
 		log.Println("Mod time     :", newitem.ModTime)
-		log.Println("Description  : " + newitem.Description)
+		log.Println("Description  :", newitem.Description)
 		log.Println("Courses      :", newitem.Courses)
 		log.Println("Degrees      :", newitem.DegreeIds)
 		log.Println("#Attachments :", len(newitem.Attachments))
 		log.Println("IsNew        :", newitem.IsNew(activationTime))
 		PrintAttachments(newitem.Attachments)
+		log.Println("Content      : " + newitem.Content)
 		log.Println("==================================================================================================")
 
 	}

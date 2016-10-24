@@ -131,9 +131,16 @@ func (item *News) GetContentFromURL() error {
 		return err
 	}
 	// Setto il contenuto dell'avviso
-	item.Content, err = m.String("text/html", doc.Find(".sezione").Text())
-	if err != nil {
-		return err
+	if doc.Find(".main-text").Text() != "" {
+		item.Content, err = m.String("text/html", doc.Find(".main-text").Text())
+		if err != nil {
+			return err
+		}
+	} else {
+		item.Content, err = m.String("text/html", doc.Find(".sezione").Text())
+		if err != nil {
+			return err
+		}
 	}
 	item.Title = doc.Find("h1").Text()
 
