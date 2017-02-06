@@ -1,2 +1,2 @@
-# Univr news to JSON
-Tool/Libreria per convertire un messaggio RSS proveniente dal sito dell'UNIVR in un oggetto JSON standard.
+# UniVR news to JSON
+Convert a news from the site to a JSON packet.

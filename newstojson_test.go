@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/url"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -185,19 +186,21 @@ func chanTestHandler(feed *rss.Feed, newchannels []*rss.Channel) {
 }
 
 func TestParseFromLink(t *testing.T) {
-	activationTime := time.Now()
+	// activationTime := time.Now()
 
-	urls := []string{
-		"http://www.di.univr.it/?ent=avviso&dest=&id=119016&lang=eng",
-		"http://www.di.univr.it/?ent=avviso&dest=&id=118920&lang=eng",
-		"http://www.di.univr.it/?ent=avviso&dest=&id=118991&lang=eng",
-		"http://www.medicina.univr.it/fol/?ent=avviso&dest=25&id=119149&lang=eng",
-		"http://www.di.univr.it/?ent=avviso&dest=&id=118536&lang=eng",
-		"http://www.di.univr.it/?ent=avviso&id=119162&lang=eng",
-		"http://www.medicina.univr.it/fol/?ent=avviso&dest=25&id=119144&lang=eng",
+	var tests = []struct {
+		url string // input
+		// expected result
+		id          int
+		modtime     bool
+		attachments int
+	}{
+		{"http://www.di.univr.it/?ent=avviso&dest=&id=119016&lang=eng", 119016, false, 0},
+		{"http://www.di.univr.it/?ent=avviso&dest=&id=118991&lang=eng", 118991, true, 0},
+		{"http://www.medicina.univr.it/fol/?ent=avviso&dest=25&id=119149", 119149, true, 1},
 	}
-	for _, urlTmp := range urls {
-		tmp, _ := url.Parse(urlTmp)
+	for _, tt := range tests {
+		tmp, _ := url.Parse(tt.url)
 		newitem, err := ParseFromLink(tmp)
 		if err != nil {
 			t.Error(err)
@@ -206,23 +209,27 @@ func TestParseFromLink(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-
-		log.Println("==================================================================================================")
-		log.Println("ID           :", newitem.ID)
-		log.Println("Title        :", newitem.Title)
-		log.Println("Author       :", newitem.Author)
-		log.Println("Link         :", newitem.Link)
-		log.Println("Pub time     :", newitem.PubTime)
-		log.Println("Mod time     :", newitem.ModTime)
-		log.Println("Description  :", newitem.Description)
-		log.Println("Courses      :", newitem.Courses)
-		log.Println("Degrees      :", newitem.DegreeIds)
-		log.Println("#Attachments :", len(newitem.Attachments))
-		log.Println("IsNew        :", newitem.IsNew(activationTime))
-		PrintAttachments(newitem.Attachments)
-		log.Println("Content      : " + newitem.Content)
-		log.Println("==================================================================================================")
-
+		if newitem.ID != tt.id {
+			t.Errorf("ID(%s): expected %d, actual %d", tt.url, tt.id, newitem.ID)
+		}
+		if strings.Compare(newitem.Author, "") == 0 {
+			t.Errorf("author(%s): expected %s, actual %s", tt.url, "an atuhor", newitem.Author)
+		}
+		if strings.Compare(newitem.Title, "") == 0 {
+			t.Errorf("title(%s): expected %s, actual %s", tt.url, "a title", newitem.Title)
+		}
+		if strings.Compare(newitem.Link.String(), "") == 0 {
+			t.Errorf("link(%s): expected %s, actual %s", tt.url, "a valid link", newitem.Link.RawPath)
+		}
+		if newitem.PubTime.IsZero() {
+			t.Errorf("pubtim(%s): expected %s, actual %s", tt.url, "a valid pub time", "vero")
+		}
+		if newitem.ModTime.IsZero() != tt.modtime {
+			t.Errorf("modtime(%s): expected %t, actual %t", tt.url, tt.modtime, newitem.ModTime.IsZero())
+		}
+		if len(newitem.Attachments) != tt.attachments {
+			t.Errorf("attachments(%s): expected %d attachments, actual %d", tt.url, tt.attachments, len(newitem.Attachments))
+		}
 	}
 }
 
