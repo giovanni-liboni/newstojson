@@ -72,6 +72,7 @@ func TestNewsPageLinksFromURLCorso(t *testing.T) {
 	correctUrls := []string{
 		"www.dbt.univr.it/?ent=avvisoin&cs=385",
 		"www.dbt.univr.it/?ent=avvisoin&cs=386",
+		"www.dbt.univr.it/?ent=avvisoin&cs=419",
 	}
 
 	res, err := NewsPageLinksFromURLCorso(url)
@@ -187,13 +188,13 @@ func TestParseFromLink(t *testing.T) {
 	activationTime := time.Now()
 
 	urls := []string{
-		"http://www.di.univr.it/?ent=avviso&dest=&id=119016",
-		"http://www.di.univr.it/?ent=avviso&dest=&id=118920",
-		"http://www.di.univr.it/?ent=avviso&dest=&id=118991",
-		"http://www.medicina.univr.it/fol/?ent=avviso&dest=25&id=119149",
-		"http://www.di.univr.it/?ent=avviso&dest=&id=118536",
-		"http://www.di.univr.it/?ent=avviso&id=119162",
-		"http://www.medicina.univr.it/fol/?ent=avviso&dest=25&id=119144",
+		"http://www.di.univr.it/?ent=avviso&dest=&id=119016&lang=eng",
+		"http://www.di.univr.it/?ent=avviso&dest=&id=118920&lang=eng",
+		"http://www.di.univr.it/?ent=avviso&dest=&id=118991&lang=eng",
+		"http://www.medicina.univr.it/fol/?ent=avviso&dest=25&id=119149&lang=eng",
+		"http://www.di.univr.it/?ent=avviso&dest=&id=118536&lang=eng",
+		"http://www.di.univr.it/?ent=avviso&id=119162&lang=eng",
+		"http://www.medicina.univr.it/fol/?ent=avviso&dest=25&id=119144&lang=eng",
 	}
 	for _, urlTmp := range urls {
 		tmp, _ := url.Parse(urlTmp)

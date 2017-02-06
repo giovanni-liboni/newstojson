@@ -70,7 +70,7 @@ func Parse(rssitem *rss.Item) (*News, error) {
 
 	// Retrive news ID
 	m, _ := url.ParseQuery(news.Link.RawQuery)
-	news.ID, _ = strconv.Atoi(m["id"][0])
+	news.ID, _ = strconv.Atoi(m.Get("id"))
 
 	// Retrive other infos
 	err = news.GetContentFromURL()
@@ -82,13 +82,14 @@ func Parse(rssitem *rss.Item) (*News, error) {
 	return news, nil
 }
 
+// ParseFromLink parse a new from a direct link
 func ParseFromLink(link *url.URL) (*News, error) {
 	news := new(News)
 	news.Link = link
 
 	// Retrive news ID
 	m, _ := url.ParseQuery(news.Link.RawQuery)
-	news.ID, _ = strconv.Atoi(m["id"][0])
+	news.ID, _ = strconv.Atoi(m.Get("id"))
 
 	// Retrive other infos
 	err := news.GetContentFromURL()
@@ -99,6 +100,7 @@ func ParseFromLink(link *url.URL) (*News, error) {
 	return news, nil
 }
 
+// CompleteParse retrive all the informations
 func (item *News) CompleteParse() error {
 	// Get all IDs courses
 	err := item.SetIDsCourses()
@@ -112,7 +114,7 @@ func (item *News) CompleteParse() error {
 // Secondary functions (IsNew)
 // =============================================================================
 
-// Return true if the news was sent BEFORE activation date
+// IsNew Return true if the news was sent BEFORE activation date
 func (item *News) IsNew(activationTime time.Time) bool {
 	return activationTime.UTC().Before(item.PubTime.UTC()) || activationTime.UTC().Equal(item.PubTime.UTC()) || activationTime.UTC().Before(item.ModTime.UTC()) || activationTime.UTC().Equal(item.ModTime.UTC())
 }
@@ -123,9 +125,22 @@ func (item *News) GetContentFromURL() error {
 	m := minify.New()
 	m.AddFunc("text/html", mhtml.Minify)
 
+	link := item.Link
+
+	l, _ := url.ParseQuery(item.Link.RawQuery)
+	if len(l["lang"]) > 1 {
+		if strings.Compare(l.Get("lang"), "eng") != 0 {
+			l.Del("lang")
+			l.Set("lang", "eng")
+		}
+	} else {
+		l.Set("lang", "eng")
+	}
+	link.RawQuery = l.Encode()
+
 	baseURL := "http://" + item.Link.Host
 
-	doc, err := goquery.NewDocument(item.Link.String())
+	doc, err := goquery.NewDocument(link.String())
 
 	if err != nil {
 		return err
@@ -213,7 +228,7 @@ func (item *News) GetContentFromURL() error {
 					log.Errorln("Error on response : " + err.Error())
 				} else {
 					defer resp.Body.Close()
-					body, err := ioutil.ReadAll(resp.Body)
+					body, _ := ioutil.ReadAll(resp.Body)
 					attach.Preview, err = m.String("text/html", string(body))
 					if err != nil {
 						log.Errorln(err)
@@ -228,6 +243,7 @@ func (item *News) GetContentFromURL() error {
 	return nil
 }
 
+// SetIDsCourses sets id courses
 func (item *News) SetIDsCourses() error {
 	var newsPageList []string
 	var err error
@@ -254,6 +270,7 @@ func (item *News) SetIDsCourses() error {
 	return nil
 }
 
+// SetIDFromURL set the news's ID from the direct link
 func (item *News) SetIDFromURL(url string) error {
 	if strings.Contains(url, "avviso") {
 		if strings.Contains(url, "univr.it") {
@@ -315,7 +332,7 @@ func getNewsPagesFromHostMedicina(host string) ([]string, error) {
 	return res, nil
 }
 
-// Ritorna la lista dei link alle pagine che contengono gli avvisi del
+// NewsPageLinksFromURLCorso Ritorna la lista dei link alle pagine che contengono gli avvisi del
 // dipartimento passato come parametro a partire dall'url che contiene
 // tutte le laure del corso
 func NewsPageLinksFromURLCorso(urlString string) ([]string, error) {
@@ -332,21 +349,22 @@ func NewsPageLinksFromURLCorso(urlString string) ([]string, error) {
 
 	if err != nil {
 		return nil, err
-	} else {
-		doc.Find("#contenutoPagina").Find("dl").Find("dt").Find("a").Each(func(i int, s *goquery.Selection) {
-
-			// Costrisco l'intero url
-			idString, idBool := s.Attr("href")
-			if idBool {
-				id := getIDFromString(idString)
-				// log.Println(rootURL.Host + "/?ent=avvisoin&cs=" + strconv.Itoa(id))
-				res = append(res, rootURL.Host+"/?ent=avvisoin&cs="+strconv.Itoa(id))
-			}
-		})
 	}
+	doc.Find("#contenutoPagina").Find("div").First().Find("dl").Find("dt").Find("a").Each(func(i int, s *goquery.Selection) {
+
+		// Costrisco l'intero url
+		idString, idBool := s.Attr("href")
+		if idBool {
+			id := getIDFromString(idString)
+			// log.Println(rootURL.Host + "/?ent=avvisoin&cs=" + strconv.Itoa(id))
+			res = append(res, rootURL.Host+"/?ent=avvisoin&cs="+strconv.Itoa(id))
+		}
+	})
+
 	return res, nil
 }
 
+// NewsPageLinksFromURLCorsoMedicina retrive information from a url based on "medicina" url.
 func NewsPageLinksFromURLCorsoMedicina(urlString string) ([]string, error) {
 	var res []string
 
@@ -361,34 +379,35 @@ func NewsPageLinksFromURLCorsoMedicina(urlString string) ([]string, error) {
 
 	if err != nil {
 		return nil, err
-	} else {
-		doc.Find("#centroservizi").Find("dl").Find("dt").Find("a").Each(func(i int, s *goquery.Selection) {
-			// Start OLD SITE
-			tokens := strings.Split(s.Text(), "(")
-			var stringToTest string
-
-			if len(tokens) > 1 {
-				stringToTest = tokens[1]
-			} else {
-				stringToTest = tokens[0]
-			}
-			// Elimino tutti i corsi che non sono piu' validi
-			if !strings.Contains(stringToTest, "until") {
-				// Recupero l'ID
-				idString, idBool := s.Attr("href")
-				if idBool {
-					id := getIDFromString(idString)
-
-					//log.Println(rootURL.Host + "/?ent=avvisoin&cs=" + strconv.Itoa(id))
-					res = append(res, rootURL.Host+"/?ent=avvisoin&cs="+strconv.Itoa(id))
-				}
-			}
-			// END OLD SITE
-		})
 	}
+	doc.Find("#centroservizi").Find("dl").Find("dt").Find("a").Each(func(i int, s *goquery.Selection) {
+		// Start OLD SITE
+		tokens := strings.Split(s.Text(), "(")
+		var stringToTest string
+
+		if len(tokens) > 1 {
+			stringToTest = tokens[1]
+		} else {
+			stringToTest = tokens[0]
+		}
+		// Elimino tutti i corsi che non sono piu' validi
+		if !strings.Contains(stringToTest, "until") {
+			// Recupero l'ID
+			idString, idBool := s.Attr("href")
+			if idBool {
+				id := getIDFromString(idString)
+
+				//log.Println(rootURL.Host + "/?ent=avvisoin&cs=" + strconv.Itoa(id))
+				res = append(res, rootURL.Host+"/?ent=avvisoin&cs="+strconv.Itoa(id))
+			}
+		}
+		// END OLD SITE
+	})
+
 	return res, nil
 }
 
+// RetriveLast5NewsIDsFromNewsPage retrives last 5 news ids from a news page
 func RetriveLast5NewsIDsFromNewsPage(newsPageURL string) ([]int, error) {
 	var res []int
 
@@ -397,26 +416,25 @@ func RetriveLast5NewsIDsFromNewsPage(newsPageURL string) ([]int, error) {
 	doc, err := goquery.NewDocument(newsPageURL)
 	if err != nil {
 		return nil, err
+	}
+	if doc.Find("table").Find("tbody").Find("tr").Find("a").Size() > 5 {
+		doc.Find("table").Find("tbody").Find("tr").Find("a").Slice(0, 5).Each(func(i int, s *goquery.Selection) {
+			idString, idBool := s.Attr("href")
+			if idBool {
+				id := getIDFromString(idString)
+				// log.Println(rootURL.Host + "/?ent=avvisoin&cs=" + strconv.Itoa(id))
+				res = append(res, id)
+			}
+		})
 	} else {
-		if doc.Find("table").Find("tbody").Find("tr").Find("a").Size() > 5 {
-			doc.Find("table").Find("tbody").Find("tr").Find("a").Slice(0, 5).Each(func(i int, s *goquery.Selection) {
-				idString, idBool := s.Attr("href")
-				if idBool {
-					id := getIDFromString(idString)
-					// log.Println(rootURL.Host + "/?ent=avvisoin&cs=" + strconv.Itoa(id))
-					res = append(res, id)
-				}
-			})
-		} else {
-			doc.Find("table").Find("tbody").Find("tr").Find("a").Each(func(i int, s *goquery.Selection) {
-				idString, idBool := s.Attr("href")
-				if idBool {
-					id := getIDFromString(idString)
-					// log.Println(rootURL.Host + "/?ent=avvisoin&cs=" + strconv.Itoa(id))
-					res = append(res, id)
-				}
-			})
-		}
+		doc.Find("table").Find("tbody").Find("tr").Find("a").Each(func(i int, s *goquery.Selection) {
+			idString, idBool := s.Attr("href")
+			if idBool {
+				id := getIDFromString(idString)
+				// log.Println(rootURL.Host + "/?ent=avvisoin&cs=" + strconv.Itoa(id))
+				res = append(res, id)
+			}
+		})
 	}
 
 	return res, nil
@@ -475,6 +493,7 @@ func contains(s []int, e int) bool {
 	return false
 }
 
+// HtmlBRDivisorTOArray splits HTML text inside <br> into an array
 func HtmlBRDivisorTOArray(html string) (res []string) {
 	res = strings.Split(html, "<br/>")
 	for i, tmp := range res {
@@ -484,13 +503,14 @@ func HtmlBRDivisorTOArray(html string) (res []string) {
 }
 
 func removeExtraSpaces(s string) string {
-	re_leadclose_whtsp := regexp.MustCompile(`^[\s\p{Zs}]+|[\s\p{Zs}]+$`)
-	re_inside_whtsp := regexp.MustCompile(`[\s\p{Zs}]{2,}`)
-	final := re_leadclose_whtsp.ReplaceAllString(s, "")
-	final = re_inside_whtsp.ReplaceAllString(final, " ")
+	ReLeadCloseWhtsp := regexp.MustCompile(`^[\s\p{Zs}]+|[\s\p{Zs}]+$`)
+	ReInsideWhtsp := regexp.MustCompile(`[\s\p{Zs}]{2,}`)
+	final := ReLeadCloseWhtsp.ReplaceAllString(s, "")
+	final = ReInsideWhtsp.ReplaceAllString(final, " ")
 	return final
 }
 
+// SpaceMap remove unwanted symbol inside a string
 func SpaceMap(str string) string {
 	return strings.Map(func(r rune) rune {
 		if unicode.IsSpace(r) {
