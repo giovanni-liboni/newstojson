@@ -124,49 +124,29 @@ func TestGetNewsPagesFromHost(t *testing.T) {
 }
 
 func TestIsNew(t *testing.T) {
-	content, _ := ioutil.ReadFile("testdata/data.rss")
-	feed := rss.New(1, true, chanTestHandler, func(feed *rss.Feed, ch *rss.Channel, newitems []*rss.Item) {
-		log.Println("Parsing all items...")
-		for _, item := range newitems {
-			newitem, err := Parse(item)
-			if err != nil {
-				t.Error(err)
-			}
-			tm := time.Now()
 
-			// Pubblicato nel passato
-			if newitem.IsNew(tm) {
-				t.Error("This news is not new")
-			}
+	// activationTime := time.Now()
 
-			// Pubblicato esattamente all'attivazione
-			newitem.PubTime = tm
-			if !newitem.IsNew(tm) {
-				t.Error("New news but got old")
-			}
-
-			// Pubblicato nel futuro
-			newitem.PubTime = tm.Add(time.Hour * 2)
-			if !newitem.IsNew(tm) {
-				t.Error("New news but got old")
-			}
-
-			// Pubblicato nel passato e modificato nel passato
-			newitem.ModTime = tm.Add(time.Hour * 1)
-			newitem.PubTime = tm
-			if newitem.IsNew(tm.Add(time.Hour * 2)) {
-				t.Error("This news is not new")
-			}
-
-			// Pubblicato nel passato e modificato nel futuro
-			newitem.ModTime = tm.Add(time.Hour * 2)
-			newitem.PubTime = tm
-			if !newitem.IsNew(tm.Add(time.Hour * 1)) {
-				t.Error("This news is not new")
-			}
+	var tests = []struct {
+		pubTime        time.Time
+		modTime        time.Time
+		activationTime time.Time
+		res            bool // expected result
+	}{
+		// Date(year int, month Month, day, hour, min, sec, nsec int, loc *Location)
+		{time.Date(2017, 12, 0, 12, 15, 30, 918273645, time.UTC), time.Date(2017, 12, 0, 12, 16, 30, 918273645, time.UTC), time.Date(2017, 0, 0, 12, 15, 30, 918273645, time.UTC), true},
+		{time.Date(2017, 12, 0, 12, 15, 30, 918273645, time.UTC), time.Date(2018, 1, 1, 12, 14, 30, 918273645, time.UTC), time.Date(2018, 1, 1, 12, 15, 30, 918273645, time.UTC), false},
+		{time.Date(2017, 12, 0, 12, 15, 30, 918273645, time.UTC), time.Date(2017, 12, 0, 12, 15, 30, 918273645, time.UTC), time.Date(2017, 12, 0, 12, 15, 30, 918273645, time.UTC), true},
+	}
+	for _, tt := range tests {
+		news := News{}
+		news.PubTime = tt.pubTime
+		news.ModTime = tt.modTime
+		res := news.IsNew(tt.activationTime)
+		if res != tt.res {
+			t.Error("Expected", tt.res, " but got", res, "\nmodTime:", tt.modTime, "\npubTime:", tt.pubTime, "\nActTime:", tt.activationTime)
 		}
-	})
-	feed.FetchBytes("http://example.com", content, nil)
+	}
 }
 
 func PrintAttachments(attachs []Attachment) {
