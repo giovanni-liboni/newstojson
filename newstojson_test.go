@@ -196,6 +196,7 @@ func TestParseFromLink(t *testing.T) {
 		attachments int
 	}{
 		{"http://www.di.univr.it/?ent=avviso&dest=&id=119016&lang=eng", 119016, false, 0},
+		{"http://www.di.univr.it/?dest=&ent=avviso&id=123492&lang=eng", 123492, false, 0},
 		{"http://www.di.univr.it/?ent=avviso&dest=&id=118991&lang=eng", 118991, true, 0},
 		{"http://www.medicina.univr.it/fol/?ent=avviso&dest=25&id=119149", 119149, true, 1},
 	}
