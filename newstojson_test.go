@@ -110,8 +110,17 @@ func TestGetNewsPagesFromHost(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if len(res) != 6 {
-		t.Error("Expected 6 elements, got", len(res))
+	// Expected:
+	// www.di.univr.it/?ent=avvisoin&cs=419
+	// www.di.univr.it/?ent=avvisoin&cs=420
+	// www.di.univr.it/?ent=avvisoin&cs=418
+	// www.di.univr.it/?ent=avvisoin&cs=385
+	// www.di.univr.it/?ent=avvisoin&cs=417
+	// www.di.univr.it/?ent=avvisoin&cs=389
+	// www.di.univr.it/?ent=avvisoin&cs=769
+	// www.di.univr.it/?ent=avvisoin&cs=792
+	if len(res) != 8 {
+		t.Error("Expected 8 elements, got", len(res))
 	}
 
 	res, err = getNewsPagesFromHostMedicina("www.medicina.univr.it")
