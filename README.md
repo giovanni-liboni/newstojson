@@ -1,4 +1,4 @@
-# UniVR news to JSON [![Build Status](https://travis-ci.com/giovanni-liboni/newstojson.svg?token=sgLvq7EDgZ7E7iLKTxFS&branch=master)](https://travis-ci.com/giovanni-liboni/newstojson)
+# UniVR news to JSON [![Build Status](https://travis-ci.org/giovanni-liboni/newstojson.svg?branch=master)](https://travis-ci.org/giovanni-liboni/newstojson)
 
 This library converts news from the UniVR departments' sites to a JSON packet.
 
