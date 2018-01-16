@@ -188,6 +188,7 @@ func TestParseFromLink(t *testing.T) {
 		{"http://www.di.univr.it/?dest=&ent=avviso&id=123492&lang=eng", 123492, false, 0},
 		{"http://www.di.univr.it/?ent=avviso&dest=&id=118991&lang=eng", 118991, true, 0},
 		{"http://www.medicina.univr.it/fol/?ent=avviso&dest=25&id=119149", 119149, true, 1},
+		{"http://www.di.univr.it/?dest=&ent=avviso&id=130134&lang=eng", 130134, true, 0},
 	}
 	for _, tt := range tests {
 		tmp, _ := url.Parse(tt.url)
@@ -220,6 +221,8 @@ func TestParseFromLink(t *testing.T) {
 		if len(newitem.Attachments) != tt.attachments {
 			t.Errorf("attachments(%s): expected %d attachments, actual %d", tt.url, tt.attachments, len(newitem.Attachments))
 		}
+
+		// log.Println(newitem.Content)
 	}
 }
 
